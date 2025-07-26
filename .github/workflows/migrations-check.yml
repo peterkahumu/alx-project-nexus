@@ -8,7 +8,7 @@ jobs:
 
     env:
       DJANGO_ENV_FILE: .env.test
-      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SETTINGS_MODULE: ecommerce.settings
 
     steps:
       - uses: actions/checkout@v4

@@ -22,7 +22,7 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
-      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SETTINGS_MODULE: ecommerce.settings
       DJANGO_ENV_FILE: .env.test
 
     steps:

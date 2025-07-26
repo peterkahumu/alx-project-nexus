@@ -1,0 +1,37 @@
+name: Check README in all folders
+
+on:
+  push:
+    paths:
+      - '**/**'
+  pull_request:
+    paths:
+      - '**/**'
+
+jobs:
+  check-readmes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Find folders missing README.md
+        run: |
+          missing=$(find . -type d \
+            ! -path '*/.*' \
+            ! -path './.github*' \
+            ! -path './ecommerce' \
+            ! -path './ecommerce/*' \
+          | while read dir; do
+            if [ ! -f "$dir/README.md" ]; then
+              echo "$dir"
+            fi
+          done)
+
+          if [ -n "$missing" ]; then
+            echo "❌ Missing README.md in the following directories:"
+            echo "$missing"
+            exit 1
+          else
+            echo "✅ All directories have README.md"
+          fi

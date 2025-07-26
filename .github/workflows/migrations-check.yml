@@ -1,0 +1,24 @@
+name: Django Migrations Check
+
+on: [push, pull_request]
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+
+    env:
+      DJANGO_ENV_FILE: .env.test
+      DJANGO_SETTINGS_MODULE: ecommerce.settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run

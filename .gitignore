@@ -4,3 +4,4 @@ venv/
 *.pyc
 *.env
 *.flake8
+.mypy_cache/

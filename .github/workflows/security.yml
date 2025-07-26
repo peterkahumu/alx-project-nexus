@@ -38,8 +38,6 @@ jobs:
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         with:
-          scan-dir: .
-          redact: true
-          verbose: true
+          args: detect --source=. --redact --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

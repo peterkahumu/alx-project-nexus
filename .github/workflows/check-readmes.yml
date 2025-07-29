@@ -20,15 +20,13 @@ jobs:
           missing=$(find . -type d \
             ! -path '*/.*' \
             ! -path './.github*' \
-            ! -path './ecommerce' \
-            ! -path './ecommerce/*' \
-            ! -path '*/migrations/*'\
-            
+            ! -path './ecommerce*' \
+            ! -path '*/migrations*' \
           | while read dir; do
-            if [ ! -f "$dir/README.md" ]; then
-              echo "$dir"
-            fi
-          done)
+              if [ ! -f "$dir/README.md" ]; then
+                echo "$dir"
+              fi
+            done)
 
           if [ -n "$missing" ]; then
             echo "❌ Missing README.md in the following directories:"

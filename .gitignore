@@ -5,3 +5,5 @@ venv/
 *.env
 *.flake8
 .mypy_cache/
+.coverage
+.pytest_cache/

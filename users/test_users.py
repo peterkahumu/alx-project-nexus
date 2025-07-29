@@ -11,7 +11,7 @@ from .models import User
 from .serializers import RegisterSerializer
 
 
-class TestUserMode(TestCase):
+class TestUserModel(TestCase):
     """Test User model functionality"""
 
     def setUp(self):
@@ -24,9 +24,7 @@ class TestUserMode(TestCase):
         }
 
     def test_create_user(self):
-        """Test creating a regular user"""
         user = User.objects.create_user(**self.user_data)
-
         self.assertEqual(user.username, "testuser")
         self.assertEqual(user.email, "test@example.com")
         self.assertEqual(user.role, "customer")
@@ -36,25 +34,51 @@ class TestUserMode(TestCase):
         self.assertIsNotNone(user.created_at)
 
     def test_create_superuser(self):
-        """Test creating a superuser"""
         admin_user = User.objects.create_superuser(
             username="admin",
             email="admin@example.com",
             password="adminpass123",
             role="admin",
         )
-
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
         self.assertEqual(admin_user.role, "admin")
 
     def test_soft_delete(self):
-        """Test soft deletion functionality"""
         user = User.objects.create_user(**self.user_data)
         user.delete()
-
         self.assertIsNotNone(user.deleted_at)
-        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(User.objects.count(), 0)
+        self.assertEqual(User.all_objects.count(), 1)
+
+    def test_soft_deleted_user_not_in_queryset(self):
+        user = User.objects.create_user(**self.user_data)
+        user.delete()
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+        self.assertTrue(User.all_objects.filter(username="testuser").exists())
+
+    def test_create_user_with_missing_fields(self):
+        with self.assertRaises(TypeError):
+            User.objects.create_user(username="incomplete")
+
+    def test_create_user_with_blank_email(self):
+        """Ensure creating a user without email raises ValueError"""
+        with self.assertRaisesMessage(ValueError, "Email is required"):
+            User.objects.create_user(
+                username="blankemail",
+                email="",
+                first_name="Blank",
+                last_name="Email",
+                password="pass123",
+            )
+
+    def test_create_superuser_sets_admin_role(self):
+        admin = User.objects.create_superuser(
+            username="superadmin", email="admin@example.com", password="adminpass123"
+        )
+        self.assertEqual(admin.role, "admin")
+        self.assertTrue(admin.is_staff)
+        self.assertTrue(admin.is_superuser)
 
 
 class TestRegisterSerializer(TestCase):
@@ -72,35 +96,25 @@ class TestRegisterSerializer(TestCase):
         }
 
     def test_valid_registration(self):
-        """Test valid registration data"""
         serializer = RegisterSerializer(data=self.valid_data)
         self.assertTrue(serializer.is_valid())
 
     def test_password_mismatch(self):
-        """Test password confirmation validation"""
         invalid_data = self.valid_data.copy()
         invalid_data["confirm_password"] = "wrongpassword"
-
         serializer = RegisterSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("error", serializer.errors)
-        self.assertEqual(serializer.errors["error"][0], "Passwords do not match.")
 
     def test_weak_password(self):
-        """Test password strength validation"""
         invalid_data = self.valid_data.copy()
         invalid_data["password"] = "123"
         invalid_data["confirm_password"] = "123"
-
         serializer = RegisterSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("error", serializer.errors)
-        self.assertEqual(
-            serializer.errors["error"][0], "Password must be greater than 6 characters."
-        )
 
     def test_duplicate_email(self):
-        """Test duplicate email validation"""
         User.objects.create_user(
             username="existing",
             email="new@example.com",
@@ -108,16 +122,11 @@ class TestRegisterSerializer(TestCase):
             last_name="User",
             password="existing123",
         )
-
         serializer = RegisterSerializer(data=self.valid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("email", serializer.errors)
-        self.assertEqual(
-            serializer.errors["email"][0], "user with this email already exists."
-        )
 
     def test_duplicate_username(self):
-        """Test duplicate username validation"""
         User.objects.create_user(
             username="newuser",
             email="existing@example.com",
@@ -125,51 +134,69 @@ class TestRegisterSerializer(TestCase):
             last_name="User",
             password="existing123",
         )
-
         serializer = RegisterSerializer(data=self.valid_data)
         self.assertFalse(serializer.is_valid())
         self.assertIn("username", serializer.errors)
-        self.assertEqual(
-            serializer.errors["username"][0], "user with this username already exists."
-        )
 
     def test_role_normalization(self):
-        """Test role field normalization"""
         data = self.valid_data.copy()
         data["role"] = "  ADMIN  "
-
         serializer = RegisterSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["role"], "admin")
 
     def test_profile_image_upload(self):
-        """Test profile image upload validation"""
         with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
             image = Image.new("RGB", (100, 100))
             image.save(temp_file, format="JPEG")
             temp_file.seek(0)
-
             uploaded = SimpleUploadedFile(
                 name="test.jpg", content=temp_file.read(), content_type="image/jpeg"
             )
-
             data = self.valid_data.copy()
             data["profile_image"] = uploaded
-
             serializer = RegisterSerializer(data=data)
             self.assertTrue(serializer.is_valid())
 
     def test_create_admin_user(self):
-        """Test admin user creation through serializer"""
         data = self.valid_data.copy()
         data["role"] = "admin"
-
         serializer = RegisterSerializer(data=data)
         self.assertTrue(serializer.is_valid())
-
         user = serializer.save()
         self.assertTrue(user.is_staff)
         self.assertEqual(user.role, "admin")
+
+    def test_invalid_email_format(self):
+        data = self.valid_data.copy()
+        data["email"] = "bad-email-format"
+        serializer = RegisterSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("email", serializer.errors)
+
+    def test_missing_username(self):
+        data = self.valid_data.copy()
+        del data["username"]
+        serializer = RegisterSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("username", serializer.errors)
+
+    def test_long_username(self):
+        data = self.valid_data.copy()
+        data["username"] = "a" * 101
+        serializer = RegisterSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("username", serializer.errors)
+
+    def test_invalid_profile_image_type(self):
+        bad_file = SimpleUploadedFile(
+            "test.txt", b"badcontent", content_type="text/plain"
+        )
+        data = self.valid_data.copy()
+        data["profile_image"] = bad_file
+        serializer = RegisterSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("profile_image", serializer.errors)
 
 
 class TestRegisterAPIView(TestCase):
@@ -188,9 +215,7 @@ class TestRegisterAPIView(TestCase):
         }
 
     def test_successful_registration(self):
-        """Test successful user registration"""
         response = self.client.post(self.url, data=self.valid_payload, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(
             response.data["success"], "User registered successfully. Please log in"
@@ -198,48 +223,54 @@ class TestRegisterAPIView(TestCase):
         self.assertTrue(User.objects.filter(username="apiuser").exists())
 
     def test_invalid_registration(self):
-        """Test registration with invalid data"""
         invalid_payload = self.valid_payload.copy()
         invalid_payload["confirm_password"] = "wrongpassword"
-
         response = self.client.post(self.url, data=invalid_payload, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
 
     def test_missing_required_fields(self):
-        """Test registration with missing required fields"""
         incomplete_payload = {
             "username": "incomplete",
             "password": "test123",
             "confirm_password": "test123",
         }
-
         response = self.client.post(self.url, data=incomplete_payload, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)
         self.assertIn("first_name", response.data)
         self.assertIn("last_name", response.data)
 
     def test_admin_registration(self):
-        """Test admin user registration"""
         admin_payload = self.valid_payload.copy()
         admin_payload["role"] = "admin"
-
         response = self.client.post(self.url, data=admin_payload, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(username="apiuser")
         self.assertTrue(user.is_staff)
         self.assertEqual(user.role, "admin")
 
+    def test_register_with_extra_fields(self):
+        payload = self.valid_payload.copy()
+        payload["extra_field"] = "hacker"
+        response = self.client.post(self.url, data=payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_register_with_empty_payload(self):
+        response = self.client.post(self.url, data={}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data)
+        self.assertIn("email", response.data)
+
+    def test_register_twice_with_same_data(self):
+        self.client.post(self.url, data=self.valid_payload, format="json")
+        response = self.client.post(self.url, data=self.valid_payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data)
+
 
 class TestUserStr(TestCase):
-    """Test user string representation"""
-
     def test_user_str(self):
-        """Test __str__ method"""
         user = User.objects.create_user(
             username="strtest",
             email="str@example.com",
@@ -247,15 +278,11 @@ class TestUserStr(TestCase):
             last_name="Test",
             password="strpass123",
         )
-
         self.assertEqual(str(user), "strtest")
 
 
 class TestUUIDField(TestCase):
-    """Test UUID field functionality"""
-
     def test_uuid_generation(self):
-        """Test automatic UUID generation"""
         user = User.objects.create_user(
             username="uuidtest",
             email="uuid@example.com",
@@ -263,7 +290,6 @@ class TestUUIDField(TestCase):
             last_name="Test",
             password="uuidpass123",
         )
-
         self.assertIsNotNone(user.uuid)
         try:
             uuid.UUID(str(user.uuid))

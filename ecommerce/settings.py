@@ -37,6 +37,8 @@ ALLOWED_HOSTS: List[str] = []
 AUTH_USER_MODEL = "users.User"
 # Application definition
 
+SWAGGER_USE_COMPAT_RENDERERS = False
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

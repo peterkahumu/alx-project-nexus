@@ -22,6 +22,7 @@ jobs:
             ! -path './.github*' \
             ! -path './ecommerce' \
             ! -path './ecommerce/*' \
+            ! -path './migrations/*'\
           | while read dir; do
             if [ ! -f "$dir/README.md" ]; then
               echo "$dir"

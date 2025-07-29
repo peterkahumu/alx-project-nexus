@@ -34,7 +34,7 @@ DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS: List[str] = []
 
-
+AUTH_USER_MODEL = "users.User"
 # Application definition
 
 INSTALLED_APPS = [
@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # third party apps
     "drf_yasg",
+    "rest_framework",
+    # local apps
+    "users",
 ]
 
 MIDDLEWARE = [

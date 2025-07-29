@@ -1,6 +1,6 @@
 name: Django Migrations Check
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   migrations:

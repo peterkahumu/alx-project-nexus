@@ -1,5 +1,6 @@
 asgiref==3.9.1
 cfgv==3.4.0
+coverage==7.10.1
 distlib==0.4.0
 Django==5.2.4
 django-environ==0.12.0
@@ -8,11 +9,18 @@ drf-yasg==1.21.10
 filelock==3.18.0
 identify==2.6.12
 inflection==0.5.1
+iniconfig==2.1.0
 nodeenv==1.9.1
 packaging==25.0
+pillow==11.3.0
 platformdirs==4.3.8
+pluggy==1.6.0
 pre_commit==4.2.0
 psycopg2-binary==2.9.10
+Pygments==2.19.2
+pytest==8.4.1
+pytest-cov==6.2.1
+pytest-django==4.11.1
 pytz==2025.2
 PyYAML==6.0.2
 sqlparse==0.5.3

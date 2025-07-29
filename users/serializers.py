@@ -48,20 +48,16 @@ class RegisterSerializer(serializers.ModelSerializer):
                 {"error": "User with that email already exists."}
             )
 
-        if User.objects.filter(username=attrs["username"]).exists():
-            raise serializers.ValidationError(
-                {"error": "Username already taken. Please use another."}
-            )
-
         return attrs
 
     def create(self, validated_data):
         """Save the user to the Database"""
         validated_data.pop("confirm_password")
 
-        user = User.objects.create_user(**validated_data)
+        role = validated_data.pop("role", "")
+        user = User.objects.create_user(**validated_data, role=role)
 
-        if validated_data["role"] and validated_data["role"] == "admin":
+        if role and role == "admin":
             user.is_staff = True
             user.save()
 

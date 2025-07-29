@@ -2,6 +2,7 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -31,3 +32,9 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    def delete(self, using=None, keep_parents=False):
+        """Deactivate a user."""
+        self.deleted_at = timezone.now()
+        self.save()
+        return (0, {})

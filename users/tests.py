@@ -11,7 +11,7 @@ from .models import User
 from .serializers import RegisterSerializer
 
 
-class UserModelTestCase(TestCase):
+class TestUserMode(TestCase):
     """Test User model functionality"""
 
     def setUp(self):
@@ -57,7 +57,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(User.objects.count(), 1)
 
 
-class RegisterSerializerTestCase(TestCase):
+class TestRegisterSerializer(TestCase):
     """Test registration serializer validation"""
 
     def setUp(self):
@@ -172,7 +172,7 @@ class RegisterSerializerTestCase(TestCase):
         self.assertEqual(user.role, "admin")
 
 
-class RegisterAPIViewTestCase(TestCase):
+class TestRegisterAPIView(TestCase):
     """Test registration API endpoint"""
 
     def setUp(self):
@@ -235,7 +235,7 @@ class RegisterAPIViewTestCase(TestCase):
         self.assertEqual(user.role, "admin")
 
 
-class UserStrTestCase(TestCase):
+class TestUserStr(TestCase):
     """Test user string representation"""
 
     def test_user_str(self):
@@ -251,7 +251,7 @@ class UserStrTestCase(TestCase):
         self.assertEqual(str(user), "strtest")
 
 
-class UUIDFieldTestCase(TestCase):
+class TestUUIDField(TestCase):
     """Test UUID field functionality"""
 
     def test_uuid_generation(self):

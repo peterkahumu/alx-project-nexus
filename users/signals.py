@@ -26,7 +26,4 @@ def send_activation_email_signal(sender, instance, created, **kwargs):
             import traceback
 
             traceback.print_exc()
-    else:
-        print(
-            f"Condition NOT met - created: {created}, is_active: {instance.is_active}"
-        )
+    return

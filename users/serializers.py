@@ -54,11 +54,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         """Save the user to the Database"""
         validated_data.pop("confirm_password")
 
-        role = validated_data.pop("role", "")
-        user = User.objects.create_user(**validated_data, role=role)
+        role = validated_data.pop("role", None)
+        if role:
+            user = User.objects.create_user(
+                **validated_data, role=role, is_active=False
+            )
+        else:
+            user = User.objects.create_user(**validated_data, is_active=False)
 
         if role and role == "admin":
             user.is_staff = True
             user.save()
-
         return user

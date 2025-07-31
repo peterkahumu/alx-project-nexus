@@ -34,7 +34,7 @@ class TestUserModel(TestCase):
         self.assertEqual(user.role, "customer")
         self.assertFalse(user.is_staff)
         self.assertTrue(user.is_active)
-        self.assertIsNotNone(user.uuid)
+        self.assertIsNotNone(user.user_id)
         self.assertIsNotNone(user.created_at)
 
     def test_create_inactive_user(self):
@@ -381,7 +381,8 @@ class TestEmailConfirmationView(TestCase):
 
     def test_nonexistent_user(self):
         """Test confirmation fails for non-existent user"""
-        uid = urlsafe_base64_encode(force_bytes(99999))  # Non-existent user ID
+        fake_uuid = uuid.uuid4()
+        uid = urlsafe_base64_encode(force_bytes(str(fake_uuid)))  # Non-existent user ID
         token = "sometoken"
         response = self.client.get(f"{self.url}?uid={uid}&token={token}")
 
@@ -511,9 +512,9 @@ class TestUUIDField(TestCase):
             last_name="Test",
             password="uuidpass123",
         )
-        self.assertIsNotNone(user.uuid)
+        self.assertIsNotNone(user.user_id)
         try:
-            uuid.UUID(str(user.uuid))
+            uuid.UUID(str(user.user_id))
         except ValueError:
             self.fail("UUID field doesn't contain valid UUID")
 

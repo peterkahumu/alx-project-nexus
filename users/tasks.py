@@ -34,19 +34,14 @@ def send_password_reset_email(email, reset_url, first_name=""):
     message = f"""
     {greeting}
 
-
     You requested to reset your password. Click the link below to set a new password:
     {reset_url}
 
-
     This link will expire in 24 hours for security reasons.
 
-
-    You can safely ignore this email if you did not request this email.
-
+    You can ignore the email if you did not request a password reset.
 
     For security reasons, this link can only be used once.
-
 
     Best regards,
     The Team

@@ -12,7 +12,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from .models import User
-from .serializers import RegisterSerializer
+from .serializers import PasswordResetConfirmSerializer, RegisterSerializer
+from .tasks import send_password_reset_email
 
 
 class TestUserModel(TestCase):
@@ -730,6 +731,15 @@ class TestPasswordResetRequest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)
 
+    @patch("users.tasks.send_mail")
+    def test_send_password_reset_email(self, mock_send_mail):
+        send_password_reset_email("test@example.com", "http://reset.link", "Peter")
+        mock_send_mail.assert_called_once()
+        args = mock_send_mail.call_args[0]
+        assert "Hi Peter" in args[1]  # message
+        assert "Reset your password" in args[0]  # subject
+        assert "http://reset.link" in args[1]
+
 
 class TestPasswordResetConfirm(TestCase):
     """Test password reset confirmation functionality"""
@@ -789,24 +799,23 @@ class TestPasswordResetConfirm(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
 
-    def test_password_reset_confirm_weak_password(self):
-        """Test password reset with weak password"""
-        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
-        token = default_token_generator.make_token(self.user)
+    def test_reset_password_with_weak_password(self):
+        user = self.user
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
 
         response = self.client.post(
-            self.url,
+            "/api/users/password-reset-confirm/",
             {
                 "uid": uid,
                 "token": token,
-                "new_password": "123",
-                "confirm_password": "123",
+                "new_password": "123456789",  # weak password
+                "confirm_password": "123456789",
             },
-            format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("new_password", response.data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("This password is too common.", str(response.data))
 
     def test_password_reset_confirm_invalid_token(self):
         """Test password reset with invalid token"""
@@ -885,3 +894,15 @@ class TestPasswordResetConfirm(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["error"], "Invalid reset link")
+
+
+def test_password_too_short_serializer():
+    data = {
+        "uid": "test",
+        "token": "fake",
+        "new_password": "123",
+        "confirm_password": "123",
+    }
+    serializer = PasswordResetConfirmSerializer(data=data)
+    assert not serializer.is_valid()
+    assert "" in str(serializer.errors)

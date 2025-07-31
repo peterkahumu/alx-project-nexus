@@ -15,7 +15,9 @@ class User(AbstractUser):
     - Extended fields: phone, role, profile image
     """
 
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user_id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True
+    )
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=100, unique=True)
     first_name = models.CharField(max_length=100)

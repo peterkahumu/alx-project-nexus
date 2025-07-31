@@ -594,3 +594,68 @@ class TestSecureTokenGeneration(TestCase):
         self.assertFalse(default_token_generator.check_token(user2, token1))
         # But should work for user1
         self.assertTrue(default_token_generator.check_token(user1, token1))
+
+
+class TestResendActivationEmail(TestCase):
+    """Test resend activation email functionality"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = "/api/users/resend-activation-email/"
+        self.inactive_user = User.objects.create_user(
+            username="inactive",
+            email="inactive@example.com",
+            first_name="Inactive",
+            last_name="User",
+            password="password123",
+            is_active=False,
+        )
+        self.active_user = User.objects.create_user(
+            username="active",
+            email="active@example.com",
+            first_name="Active",
+            last_name="User",
+            password="password123",
+            is_active=True,
+        )
+
+    @patch("users.tasks.send_activation_email.delay")
+    def test_successful_resend_activation_email(self, mock_task):
+        """Test successful resend activation email"""
+        response = self.client.post(
+            self.url, {"email": "inactive@example.com"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("If an account with that email exists", response.data["success"])
+
+        # Check that email task was called
+        mock_task.assert_called_once()
+
+    def test_resend_activation_email_already_active(self):
+        """Test resend activation email for already active user"""
+        response = self.client.post(
+            self.url, {"email": "active@example.com"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["error"], "Account already activated. Please log in."
+        )
+
+    def test_resend_activation_email_nonexistent_user(self):
+        """Test resend activation email for non-existent user"""
+        response = self.client.post(
+            self.url, {"email": "nonexistent@example.com"}, format="json"
+        )
+
+        # Should return generic message for security
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("If an account with that email exists", response.data["success"])
+
+    def test_resend_activation_email_missing_email(self):
+        """Test resend activation email without email"""
+        response = self.client.post(self.url, {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["error"], "Email is required.")

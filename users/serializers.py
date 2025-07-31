@@ -66,3 +66,38 @@ class RegisterSerializer(serializers.ModelSerializer):
             user.is_staff = True
             user.save()
         return user
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for requesting password reset"""
+
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        """Validate email format"""
+        return value.lower().strip()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for confirming password reset"""
+
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    new_password = serializers.CharField(
+        min_length=6,
+        required=True,
+        help_text="Password must be at least 6 characters long",
+    )
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        """Validate that passwords match"""
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({"error": "Passwords do not match"})
+
+        if len(attrs["new_password"]) < 6:
+            raise serializers.ValidationError(
+                {"error": "Password must be at least 6 characters long"}
+            )
+
+        return attrs

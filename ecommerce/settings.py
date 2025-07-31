@@ -35,6 +35,8 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS: List[str] = []
 
 AUTH_USER_MODEL = "users.User"
+
+FRONTEND_URL = env("FRONTEND_URL")
 # Application definition
 
 SWAGGER_USE_COMPAT_RENDERERS = False
@@ -138,3 +140,19 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# EMAIL CONFIRMATION
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+
+# Configure CELERY settings
+# Add this to your Celery settings
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"

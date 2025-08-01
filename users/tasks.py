@@ -23,3 +23,30 @@ def send_activation_email(email, confirmation_url):
         subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
     )
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+
+
+@shared_task
+def send_password_reset_email(email, reset_url, first_name=""):
+    """Send password reset email"""
+    greeting = f"Hi {first_name}, " if first_name else "Hi"
+
+    subject = "Reset your password"
+    message = f"""
+    {greeting}
+
+    You requested to reset your password. Click the link below to set a new password:
+    {reset_url}
+
+    This link will expire in 24 hours for security reasons.
+
+    You can ignore the email if you did not request a password reset.
+
+    For security reasons, this link can only be used once.
+
+    Best regards,
+    The Team
+    """
+
+    send_mail(
+        subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
+    )

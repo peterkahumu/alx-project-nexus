@@ -7,3 +7,4 @@ venv/
 .mypy_cache/
 .coverage
 .pytest_cache/
+pyproject.toml

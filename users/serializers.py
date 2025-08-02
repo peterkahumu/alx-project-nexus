@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -101,3 +103,39 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class CustomLoginSerializer(serializers.Serializer):
+    """
+    Custom login serializer to support username or email login for JWT tokens.
+    """
+
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        identifier = attrs.get("username")
+        password = attrs.get("password")
+
+        user = User.objects.filter(
+            Q(username__iexact=identifier) | Q(email__iexact=identifier)
+        ).first()
+
+        if user and user.check_password(password):
+            if not user.is_active:
+                raise serializers.ValidationError(
+                    "Account is not active. Please activate via email."
+                )
+
+            # Manually create tokens
+            refresh = RefreshToken.for_user(user)
+
+            return {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user_id": str(user.user_id),
+                "username": user.username,
+                "role": user.role,
+            }
+
+        raise serializers.ValidationError({"error": "Invalid credentials"})

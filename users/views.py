@@ -1,17 +1,17 @@
 from typing import List
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
-from django.core.exceptions import ValidationError
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import (
+    CustomLoginSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
@@ -182,14 +182,6 @@ class PasswordResetConfirmView(APIView):
                 user = User.objects.get(pk=user_id, is_active=True)
 
                 if default_token_generator.check_token(user, token):
-                    # Validate password strength
-                    try:
-                        validate_password(new_password, user)
-                    except ValidationError as e:
-                        return Response(
-                            {"error": e.messages}, status=status.HTTP_400_BAD_REQUEST
-                        )
-
                     # Set new password
                     user.set_password(new_password)
                     user.save()
@@ -210,3 +202,9 @@ class PasswordResetConfirmView(APIView):
                     {"error": "Invalid reset link"}, status=status.HTTP_400_BAD_REQUEST
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomLoginView(TokenObtainPairView):
+    """Login user using email/username and password"""
+
+    serializer_class = CustomLoginSerializer

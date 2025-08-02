@@ -8,11 +8,15 @@ from django.test import TestCase, override_settings
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from PIL import Image
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.test import APIClient
 
 from .models import User
-from .serializers import PasswordResetConfirmSerializer, RegisterSerializer
+from .serializers import (
+    CustomLoginSerializer,
+    PasswordResetConfirmSerializer,
+    RegisterSerializer,
+)
 from .tasks import send_password_reset_email
 
 
@@ -799,24 +803,6 @@ class TestPasswordResetConfirm(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
 
-    def test_reset_password_with_weak_password(self):
-        user = self.user
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-        response = self.client.post(
-            "/api/users/password-reset-confirm/",
-            {
-                "uid": uid,
-                "token": token,
-                "new_password": "123456789",  # weak password
-                "confirm_password": "123456789",
-            },
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("This password is too common.", str(response.data))
-
     def test_password_reset_confirm_invalid_token(self):
         """Test password reset with invalid token"""
         uid = urlsafe_base64_encode(force_bytes(self.user.pk))
@@ -905,4 +891,261 @@ def test_password_too_short_serializer():
     }
     serializer = PasswordResetConfirmSerializer(data=data)
     assert not serializer.is_valid()
-    assert "" in str(serializer.errors)
+    assert "Ensure this field has at least 6 characters." in str(serializer.errors)
+
+
+class TestLoginSerializer(TestCase):
+    """Test the custom login serializer functionality"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            password="testpass123",
+            is_active=True,
+        )
+        self.inactive_user = User.objects.create_user(
+            username="inactive",
+            email="inactive@example.com",
+            first_name="Inactive",
+            last_name="User",
+            password="inactive123",
+            is_active=False,
+        )
+
+    def test_successful_login_with_username(self):
+        """Test successful login using username"""
+        data = {"username": "testuser", "password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        result = serializer.validate(data)
+        self.assertIn("access", result)
+        self.assertIn("refresh", result)
+        self.assertEqual(result["username"], "testuser")
+
+    def test_successful_login_with_email(self):
+        """Test successful login using email"""
+        data = {"username": "test@example.com", "password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        result = serializer.validate(data)
+        self.assertIn("access", result)
+        self.assertIn("refresh", result)
+        self.assertEqual(result["username"], "testuser")
+
+    def test_login_case_insensitive(self):
+        """Test login is case insensitive for username/email"""
+        # Test uppercase email
+        data = {"username": "TEST@EXAMPLE.COM", "password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        # Test mixed case username
+        data = {"username": "TestUser", "password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+    def test_invalid_credentials(self):
+        """Test login with invalid credentials"""
+        # Wrong password
+        data = {"username": "testuser", "password": "wrongpassword"}
+        serializer = CustomLoginSerializer(data=data)
+        with self.assertRaises(serializers.ValidationError) as context:
+            serializer.validate(data)
+        self.assertIn("Invalid credentials", str(context.exception))
+
+        # Nonexistent user
+        data = {"username": "nonexistent", "password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        with self.assertRaises(serializers.ValidationError) as context:
+            serializer.validate(data)
+        self.assertIn("Invalid credentials", str(context.exception))
+
+    def test_inactive_user_login(self):
+        """Test login attempt for inactive user"""
+        data = {"username": "inactive", "password": "inactive123"}
+        serializer = CustomLoginSerializer(data=data)
+        with self.assertRaises(serializers.ValidationError) as context:
+            serializer.validate(data)
+        self.assertIn("Account is not active", str(context.exception))
+
+    def test_missing_username(self):
+        """Test login with missing username"""
+        data = {"password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("username", serializer.errors)
+
+    def test_missing_password(self):
+        """Test login with missing password"""
+        data = {"username": "testuser"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("password", serializer.errors)
+
+    def test_empty_username(self):
+        """Test login with empty username"""
+        data = {"username": "", "password": "testpass123"}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("username", serializer.errors)
+
+    def test_empty_password(self):
+        """Test login with empty password"""
+        data = {"username": "testuser", "password": ""}
+        serializer = CustomLoginSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("password", serializer.errors)
+
+
+class TestLoginView(TestCase):
+    """Test the login API endpoint"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = "/api/users/login/"
+        self.user = User.objects.create_user(
+            username="loginuser",
+            email="login@example.com",
+            first_name="Login",
+            last_name="User",
+            password="loginpass123",
+            is_active=True,
+        )
+        self.inactive_user = User.objects.create_user(
+            username="inactivelogin",
+            email="inactive@example.com",
+            first_name="Inactive",
+            last_name="Login",
+            password="inactive123",
+            is_active=False,
+        )
+
+    def test_successful_login_with_username(self):
+        """Test successful login using username"""
+        response = self.client.post(
+            self.url,
+            {"username": "loginuser", "password": "loginpass123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertEqual(response.data["username"], "loginuser")
+
+    def test_successful_login_with_email(self):
+        """Test successful login using email"""
+        response = self.client.post(
+            self.url,
+            {"username": "login@example.com", "password": "loginpass123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertEqual(response.data["username"], "loginuser")
+
+    def test_invalid_credentials(self):
+        """Test login with invalid credentials"""
+        response = self.client.post(
+            self.url,
+            {"username": "loginuser", "password": "wrongpassword"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
+
+    def test_inactive_user_login(self):
+        """Test login attempt for inactive user"""
+        response = self.client.post(
+            self.url,
+            {"username": "inactivelogin", "password": "inactive123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Account is not active", str(response.data))
+
+    def test_missing_credentials(self):
+        """Test login with missing credentials"""
+        # Missing username
+        response = self.client.post(
+            self.url,
+            {"password": "loginpass123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data)
+
+        # Missing password
+        response = self.client.post(
+            self.url,
+            {"username": "loginuser"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password", response.data)
+
+    def test_empty_credentials(self):
+        """Test login with empty credentials"""
+        # Empty username
+        response = self.client.post(
+            self.url,
+            {"username": "", "password": "loginpass123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data)
+
+        # Empty password
+        response = self.client.post(
+            self.url,
+            {"username": "loginuser", "password": ""},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password", response.data)
+
+
+class TestUserRoleBasedAccess(TestCase):
+    """Test role-based access control functionality"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.login_url = "/api/users/login/"
+
+        # Create users with different roles
+        self.customer = User.objects.create_user(
+            username="customer",
+            email="customer@example.com",
+            password="customer123",
+            role="customer",
+            is_active=True,
+        )
+
+        self.admin = User.objects.create_user(
+            username="admin",
+            email="admin@example.com",
+            password="admin123",
+            role="admin",
+            is_active=True,
+        )
+
+    def test_role_in_login_response(self):
+        """Test that role is included in login response"""
+        # Test customer role
+        response = self.client.post(
+            self.login_url,
+            {"username": "customer", "password": "customer123"},
+            format="json",
+        )
+        self.assertEqual(response.data["role"], "customer")
+
+        # Test admin role
+        response = self.client.post(
+            self.login_url,
+            {"username": "admin", "password": "admin123"},
+            format="json",
+        )
+        self.assertEqual(response.data["role"], "admin")

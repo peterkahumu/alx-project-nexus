@@ -35,7 +35,7 @@ class User(AbstractUser):
     )
 
     profile_image = models.ImageField(
-        upload_to="media/profile_pictures", null=True, blank=True
+        upload_to="profile_pictures", null=True, blank=True
     )
 
     address = models.JSONField(null=True, blank=True)

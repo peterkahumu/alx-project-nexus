@@ -38,6 +38,8 @@ class User(AbstractUser):
         upload_to="media/profile_pictures", null=True, blank=True
     )
 
+    address = models.CharField(max_length=100, null=True, blank=True)
+
     # Soft delete + timestamp tracking
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

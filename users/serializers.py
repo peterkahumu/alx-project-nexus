@@ -25,10 +25,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             "phone",
             "role",
             "profile_image",
+            "address",
         ]
         extra_kwargs = {
             "role": {"required": False},
             "profile_image": {"required": False},
+            "address": {"required": False},
         }
 
     def validate_role(self, value):

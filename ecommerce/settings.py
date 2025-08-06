@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import List
 
 import environ
+import dj_database_url
 
 env = environ.Env(DEBUG=(bool, False))
 
@@ -92,14 +93,19 @@ WSGI_APPLICATION = "ecommerce.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#database
 
+# For Neon PostgreSQL, you can use either the connection string or individual parameters
+# Option 1: Using connection string (recommended for Neon)
+db_from_env = dj_database_url.config(
+    default=env('DATABASE_URL', default=None),  # e.g., 'postgresql://user:password@host:port/dbname'
+    conn_max_age=600
+)
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
+    'default': db_from_env or {
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'sslmode': 'require',  # Required for Neon
+        },
     }
 }
 

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -38,9 +40,9 @@ class CreateOrderFromCartView(views.APIView):
                 item.product.unit_price * item.quantity for item in cart_items
             )
 
-            tax_amount = subtotal * settings.TAX_RATE  # Dynamic
-            shipping_cost = (
-                settings.DEFAULT_SHIPPING_COST
+            tax_amount = subtotal * Decimal(str(settings.TAX_RATE))  # Dynamic
+            shipping_cost = Decimal(
+                str(settings.DEFAULT_SHIPPING_COST)
             )  # changes with location later
             total = subtotal + tax_amount + shipping_cost
 

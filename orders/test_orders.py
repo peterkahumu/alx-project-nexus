@@ -376,6 +376,17 @@ class CreateOrderFromCartViewTest(APITestCase):
         self.assertIn("error", response.data)
         self.assertEqual(response.data["error"], "Your cart is empty")
 
+    def test_create_order_no_cart(self):
+        """Test creating order when user has no cart"""
+        # Delete the cart
+        self.cart.delete()
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
+
     @patch("orders.tasks.send_order_email.delay")
     def test_create_order_success(self, mock_send_email):
         """Test successful order creation from cart"""

@@ -178,3 +178,8 @@ SIMPLE_JWT = {
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# orders defaults.
+"""The defaults below are bound to change from one region to the other."""
+DEFAULT_SHIPPING_COST = env("DEFAULT_SHIPPING_COST")
+TAX_RATE = env("TAX_RATE")

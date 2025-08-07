@@ -9,7 +9,6 @@ from django.utils import timezone
 
 from .models import Order
 
-now = timezone.now().strftime("%d %b %Y, %I:%M %p")
 logger = logging.getLogger(__name__)
 
 
@@ -28,8 +27,10 @@ def send_order_email(
 
     if event == "created":
         subject = "🎉 Order place successfully."
-        message += f"Thank you for placing order #{order.order_number}.\
-         We will update you once shipping starts"
+        message += (
+            f"Thank you for placing order #{order.order_number}. "
+            "We will update you once shipping starts"
+        )
 
     elif event == "status_changed":
         subject = "📦 Order Status Updated"
@@ -40,6 +41,7 @@ def send_order_email(
         message += f"Order #{order.order_number} payment status changed from '{old_value}' to '{new_value}'."  # noqa
 
     elif event == "payment_failed":
+        now = timezone.now().strftime("%d %b %Y, %I:%M %p")
         subject = "🚫 Payment Failed"
         message += (
             f"Payment for Order #{order.order_number} failed.\n"

@@ -1,5 +1,4 @@
-from decimal import Decimal
-
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import permissions, status, views, viewsets
@@ -30,15 +29,19 @@ class CreateOrderFromCartView(views.APIView):
                 )
 
         except Cart.DoesNotExist:
-            return Response({"error": "Cart not found"})
+            return Response(
+                {"error": "Cart not found"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         with transaction.atomic():
             subtotal = sum(
                 item.product.unit_price * item.quantity for item in cart_items
             )
 
-            tax_amount = subtotal * Decimal("0.16")
-            shipping_cost = 300  # changes with location later
+            tax_amount = subtotal * settings.TAX_RATE  # Dynamic
+            shipping_cost = (
+                settings.DEFAULT_SHIPPING_COST
+            )  # changes with location later
             total = subtotal + tax_amount + shipping_cost
 
             order = Order.objects.create(
@@ -83,7 +86,7 @@ class OrderViewset(viewsets.ReadOnlyModelViewSet):
         if getattr(
             self, "swagger_fake_view", False
         ):  # <-- swagger doc generation check
-            return Cart.objects.none()
+            return Order.objects.none()
         return Order.objects.filter(user=self.request.user)
 
     @action(detail=True, methods=["post"])

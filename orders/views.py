@@ -40,10 +40,12 @@ class CreateOrderFromCartView(views.APIView):
                 item.product.unit_price * item.quantity for item in cart_items
             )
 
-            tax_amount = subtotal * Decimal(str(settings.TAX_RATE))  # Dynamic
+            tax_amount = subtotal * Decimal(
+                str(settings.TAX_RATE)
+            )  # configurable via settings
             shipping_cost = Decimal(
                 str(settings.DEFAULT_SHIPPING_COST)
-            )  # changes with location later
+            )  # TODO: function to calculate shipping cost based on location
             total = subtotal + tax_amount + shipping_cost
 
             order = Order.objects.create(
@@ -97,7 +99,7 @@ class OrderViewset(viewsets.ReadOnlyModelViewSet):
 
         if order.status != "pending":
             return Response(
-                {"error": "Only pending and unpaid orders can be cancelled."},
+                {"error": "Only pending orders can be cancelled."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

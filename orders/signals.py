@@ -57,10 +57,7 @@ def send_order_update_emails(sender, instance, **kwargs):
         )
 
     # If payment failed
-    if (
-        instance.payment_status.lower() == "failed"
-        and old.payment_status.lower() != "failed"
-    ):
+    if instance.payment_status == "failed" and old.payment_status != "failed":
         send_order_email.delay(
             event="payment_failed",
             order_id=str(instance.order_id),

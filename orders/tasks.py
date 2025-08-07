@@ -26,7 +26,7 @@ def send_order_email(
     message = f"Hello {user_fullname}.\n\n "
 
     if event == "created":
-        subject = "🎉 Order place successfully."
+        subject = "🎉 Order placed successfully."
         message += (
             f"Thank you for placing order #{order.order_number}. "
             "We will update you once shipping starts"

@@ -696,7 +696,7 @@ class OrderTasksTest(TestCase):
 
             self.assertEqual(len(mail.outbox), 1)
             email = mail.outbox[0]
-            self.assertEqual(email.subject, "🎉 Order place successfully.")
+            self.assertEqual(email.subject, "🎉 Order placed successfully.")
             self.assertIn(self.order.order_number, email.body)
             self.assertIn("Test User", email.body)
 

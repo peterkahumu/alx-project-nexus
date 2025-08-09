@@ -5,7 +5,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -495,6 +495,9 @@ class PaymentIntegrationTests(TestCase):
         # Provider's verify_payment should not be called
         mock_provider.verify_payment.assert_not_called()
 
+    @override_settings(
+        PAYMENT_CALLBACK_URLS={"test_provider": "https://test-callback.com"}
+    )
     def test_order_state_transitions(self):
         """Test proper order state transitions during payment flow"""
         # Mock provider
@@ -517,7 +520,6 @@ class PaymentIntegrationTests(TestCase):
             "initiate-payment", kwargs={"order_id": self.order.order_id}
         )
         self.client.post(initiate_url, {"provider": "test_provider"})
-
         payment = Payment.objects.get(order=self.order)
         self.assertEqual(payment.status, "processing")
         # Order status should remain unchanged until payment succeeds
@@ -618,6 +620,9 @@ class PaymentConcurrencyIntegrationTests(TransactionTestCase):
         """Clean up after each test"""
         _PROVIDERS.clear()
 
+    @override_settings(
+        PAYMENT_CALLBACK_URLS={"test_provider": "https://test-callback.com"}
+    )
     def test_concurrent_payment_initiation_prevention(self):
         """Test that concurrent payment initiations are properly handled"""
         # Mock provider

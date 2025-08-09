@@ -213,3 +213,4 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     *PAYMENT_CALLBACK_URLS.values(),
 ]
+print("The cors headers are: ", CORS_ALLOWED_ORIGINS)

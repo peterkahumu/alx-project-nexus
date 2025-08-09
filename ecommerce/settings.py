@@ -211,6 +211,6 @@ CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
-    *PAYMENT_CALLBACK_URLS.values(),
+    # *PAYMENT_CALLBACK_URLS.values(),
+    "http://your_domain.example.com",
 ]
-print("The cors headers are: ", CORS_ALLOWED_ORIGINS)

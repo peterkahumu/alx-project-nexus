@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import json
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -33,7 +34,7 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS: List[str] = []
+ALLOWED_HOSTS: List[str] = ["*"]
 
 AUTH_USER_MODEL = "users.User"
 
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     "products",
     "cart",
     "orders",
+    "payments",
 ]
 
 MIDDLEWARE = [
@@ -152,6 +154,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:3000",
+    "https://riverside-debian-moscow-suggests.trycloudflare.com",
 ]
 
 
@@ -185,6 +188,21 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
 }
 
+
+# swagger settings
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": 'JWT Authorization header using the Bearer scheme. e.g., "Bearer {token}"',  # noqa
+        }
+    },
+    "USE_SESSION_AUTH": False,
+}
+
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
@@ -192,3 +210,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 """The defaults below are bound to change from one region to the other."""
 DEFAULT_SHIPPING_COST = env("DEFAULT_SHIPPING_COST")
 TAX_RATE = env("TAX_RATE")
+
+PAYMENT_CALLBACK_URLS = json.loads(os.getenv("PAYMENT_CALLBACK_URLS", "{}"))
+CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY")
+CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")

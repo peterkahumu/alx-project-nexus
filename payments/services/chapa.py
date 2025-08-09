@@ -39,8 +39,6 @@ class ChapaProvider(BasePaymentProvider):
         }
         headers = {"Authorization": f"Bearer {settings.CHAPA_SECRET_KEY}"}
 
-        print("Initiating payment with:", payment, callback_url)
-
         try:
             resp = requests.post(
                 f"{CHAPA_BASE}/transaction/initialize",
@@ -49,7 +47,7 @@ class ChapaProvider(BasePaymentProvider):
                 timeout=15,
             )
             data = resp.json()
-        except Exception as e:
+        except requests.RequestException as e:
             return {"success": False, "error": f"Request failed: {e}"}
 
         # chapa marks errors with status != "success"

@@ -55,6 +55,8 @@ class InitiatePaymentView(views.APIView):
             )
 
         provider_key = request.data.get("provider")
+        currency = request.data.get("currency", "ETB")
+
         provider = get_provider(provider_key)
         if not provider:
             return Response({"error": "Unsupported provider"}, status=400)
@@ -66,7 +68,7 @@ class InitiatePaymentView(views.APIView):
                 "user": request.user,
                 "provider": provider_key,
                 "amount": order.total_amount,
-                "currency": "ETB",
+                "currency": currency,
                 "transaction_ref": tx_ref,
                 "status": "pending",
             },
@@ -77,7 +79,7 @@ class InitiatePaymentView(views.APIView):
             if payment.status in ["failed", "cancelled", "pending"]:
                 payment.provider = provider_key
                 payment.amount = order.total_amount
-                payment.currency = "ETB"
+                payment.currency = currency
                 payment.transaction_ref = str(uuid.uuid4())
                 payment.status = "pending"
                 payment.save()
@@ -89,9 +91,17 @@ class InitiatePaymentView(views.APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+        callback_base_url = settings.PAYMENT_CALLBACK_URLS.get(provider_key)
+
+        if not callback_base_url:
+            """Validate to ensure that a callback url is there, if not, exit early."""
+            return Response(
+                {"error": "Callback URL empty. Please update your .env file."}
+            )
+
         resp = provider.initiate_payment(
             payment=payment,
-            callback_url=f"{settings.PAYMENT_CALLBACK_URLS.get(provider_key)}/api/payments/verify/{provider_key}/",  # noqa,
+            callback_url=f"{callback_base_url}/api/payments/verify/{provider_key}/",  # noqa,
         )
 
         if not resp["success"]:
@@ -149,7 +159,7 @@ class ProviderVerifyView(views.APIView):
             return Response(
                 {
                     "success": False,
-                    "error": "Previous payment was successfull. Cannot be modified again. ",
+                    "error": "Previous payment was successful. Cannot be modified again.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

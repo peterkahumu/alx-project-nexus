@@ -3,7 +3,9 @@ asgiref==3.9.1
 billiard==4.2.1
 black==25.1.0
 celery==5.5.3
+certifi==2025.8.3
 cfgv==3.4.0
+charset-normalizer==3.4.2
 click==8.2.1
 click-didyoumean==0.3.1
 click-plugins==1.1.1.2
@@ -19,6 +21,7 @@ djangorestframework_simplejwt==5.5.1
 drf-yasg==1.21.10
 filelock==3.18.0
 identify==2.6.12
+idna==3.10
 inflection==0.5.1
 iniconfig==2.1.0
 isort==6.0.1
@@ -42,10 +45,13 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 PyYAML==6.0.2
 redis==6.2.0
+requests==2.32.4
 six==1.17.0
 sqlparse==0.5.3
+types-requests==2.32.4.20250809
 tzdata==2025.2
 uritemplate==4.2.0
+urllib3==2.5.0
 vine==5.1.0
 virtualenv==20.32.0
 wcwidth==0.2.13

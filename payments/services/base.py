@@ -45,5 +45,5 @@ class BasePaymentProvider(ABC):
             request: Incoming HTTP request.
 
         Returns:
-            dict: Must include {'ok': True, 'transaction_ref': str, ...}
+            dict: Must include at least {'transaction_ref': str, 'payload':...}
         """

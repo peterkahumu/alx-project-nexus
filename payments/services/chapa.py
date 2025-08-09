@@ -46,7 +46,10 @@ class ChapaProvider(BasePaymentProvider):
                 headers=headers,
                 timeout=15,
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError as e:
+                return {"success": False, "error": f"Invalid JSON response: {e}"}
         except requests.RequestException as e:
             return {"success": False, "error": f"Request failed: {e}"}
 

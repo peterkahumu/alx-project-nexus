@@ -150,14 +150,6 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS SETUP
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://localhost:3000",
-    "https://riverside-debian-moscow-suggests.trycloudflare.com",
-]
-
-
 # EMAIL CONFIRMATION
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
@@ -214,3 +206,10 @@ TAX_RATE = env("TAX_RATE")
 PAYMENT_CALLBACK_URLS = json.loads(os.getenv("PAYMENT_CALLBACK_URLS", "{}"))
 CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY")
 CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")
+
+# CORS SETUP
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://localhost:3000",
+    *PAYMENT_CALLBACK_URLS.values(),
+]

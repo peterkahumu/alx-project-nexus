@@ -96,7 +96,8 @@ class InitiatePaymentView(views.APIView):
         if not callback_base_url:
             """Validate to ensure that a callback url is there, if not, exit early."""
             return Response(
-                {"error": "Callback URL empty. Please update your .env file."}
+                {"error": "Callback URL empty. Please update your .env file."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         resp = provider.initiate_payment(

@@ -45,8 +45,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         featured = self.request.GET.get("featured")
 
         if category:
-            queryset = Product.objects.filter(category__category_id__iexact=category)
+            queryset = queryset.filter(category__category_id__iexact=category)
         if featured:
-            queryset = Product.objects.filter(featured=True)
+            queryset = queryset.filter(featured=True)
 
         return queryset

@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets
 
 from .models import Category, Product
@@ -45,7 +46,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         featured = self.request.GET.get("featured")
 
         if category:
-            queryset = queryset.filter(category__category_id__iexact=category)
+            queryset = queryset.filter(
+                Q(category__category_id__iexact=category)
+                | Q(category__name__iexact=category)
+            )
         if featured:
             queryset = queryset.filter(featured=True)
 

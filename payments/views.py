@@ -54,7 +54,7 @@ class InitiatePaymentView(views.APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        provider_key = request.data.get("provider")
+        provider_key = request.data.get("provider", "chapa")
         currency = request.data.get("currency", "ETB")
 
         provider = get_provider(provider_key)
@@ -113,6 +113,7 @@ class InitiatePaymentView(views.APIView):
             )
 
         payment.status = "processing"
+        payment.checkout_url = resp["checkout_url"]
         payment.save()
         return Response(
             {"checkout_url": resp["checkout_url"], "payment_id": resp["payment_id"]},
@@ -192,7 +193,7 @@ class ProviderVerifyView(views.APIView):
         if redirect_user:
             # Send user to a front-end result page
             return redirect(
-                f"/payment-result?status={'success' if success else 'failed'}"
+                f"http://localhost:3000/order-confirmed/{order.order_id}?status={'success' if success else 'failed'}"  # noqa
             )
 
         return Response(
@@ -205,4 +206,8 @@ class PaymentView(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentSerializer
 
     def get_queryset(self):
+        if getattr(
+            self, "swagger_fake_view", False
+        ):  # <-- swagger doc generation check
+            return Payment.objects.none()
         return Payment.objects.filter(user=self.request.user).order_by("-created_at")

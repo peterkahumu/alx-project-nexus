@@ -77,7 +77,13 @@ class CreateOrderFromCartView(views.APIView):
             cart_items.delete()
 
         serializer = OrderSerializer(order)
-        return Response({"success": serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "success": "order created",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class OrderViewset(viewsets.ReadOnlyModelViewSet):

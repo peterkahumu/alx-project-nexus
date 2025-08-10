@@ -14,7 +14,6 @@ import json
 import os
 from datetime import timedelta
 from pathlib import Path
-from typing import List
 
 import environ
 
@@ -34,13 +33,8 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS: List[str] = [
-    "127.0.0.1",
-    ".vercel.app",
-    ".now.sh",
-    "localhost",
-    "alx-project-nexus-production-d625.up.railway.app",
-]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
 
 AUTH_USER_MODEL = "users.User"
 
@@ -215,6 +209,7 @@ TAX_RATE = env("TAX_RATE")
 PAYMENT_CALLBACK_URLS = json.loads(os.getenv("PAYMENT_CALLBACK_URLS", "{}"))
 CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY")
 CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")
+
 
 # CORS SETUP
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")

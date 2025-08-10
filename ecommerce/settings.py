@@ -217,9 +217,4 @@ CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY")
 CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")
 
 # CORS SETUP
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-    "http://localhost:3000",
-    # *PAYMENT_CALLBACK_URLS.values(),
-    "http://your_domain.example.com",
-]
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")

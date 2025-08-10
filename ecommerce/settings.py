@@ -164,8 +164,8 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 # Configure CELERY settings
 # Add this to your Celery settings
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 

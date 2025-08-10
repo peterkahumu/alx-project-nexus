@@ -1,7 +1,7 @@
 # Use Python 3.12
 FROM python:3.12-slim
 
-# Set environment variables
+# Set environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
@@ -19,14 +19,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy the project
 COPY . /app/
 
-# Supervisor config to run both Django + Celery
+# Copy Supervisor config
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
-
-# Run supervisord
+# Start Supervisor (will run Django + Celery)
 CMD ["/usr/bin/supervisord"]

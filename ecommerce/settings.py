@@ -217,4 +217,15 @@ CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY")
 CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")
 
 # CORS SETUP
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+
+if not DEBUG:
+    # Trust the X-Forwarded-Proto header from Railway
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    # Force all URLs and redirects to be HTTPS
+    SECURE_SSL_REDIRECT = True
+
+    # If you're generating absolute URLs in serializers/views
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True

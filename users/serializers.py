@@ -3,8 +3,6 @@ from django.db.models import Q
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from cart.models import Cart
-
 User = get_user_model()
 
 
@@ -66,12 +64,11 @@ class RegisterSerializer(serializers.ModelSerializer):
                 **validated_data, role=role, is_active=False
             )
         else:
-            user = User.objects.create_user(**validated_data)
+            user = User.objects.create_user(**validated_data, is_active=False)
 
         if role and role == "admin":
             user.is_staff = True
             user.save()
-        Cart.objects.get_or_create(user=user)
         return user
 
 

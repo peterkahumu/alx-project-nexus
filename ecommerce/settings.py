@@ -34,7 +34,13 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS: List[str] = ["127.0.0.1", ".vercel.app", ".now.sh", "localhost"]
+ALLOWED_HOSTS: List[str] = [
+    "127.0.0.1",
+    ".vercel.app",
+    ".now.sh",
+    "localhost",
+    "alx-project-nexus-production-d625.up.railway.app",
+]
 
 AUTH_USER_MODEL = "users.User"
 

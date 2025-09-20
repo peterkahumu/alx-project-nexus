@@ -1,189 +1,287 @@
-# ALX PROJECT NEXUS
+# 🛍️ E-Commerce Platform
+![Django](https://img.shields.io/badge/Django-5.2.4-green)  ![Python](https://img.shields.io/badge/Python-3.12-blue)  ![License](https://img.shields.io/badge/license-MIT-blue)
 
-[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
-[![Django](https://img.shields.io/badge/django-4.0+-green.svg)](https://djangoproject.com)
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://docker.com)
-![Postman Tests](https://github.com/snipher-marube/alx-project-nexus/workflows/Postman%20API%20Tests/badge.svg)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/snipher-marube/alx-project-nexus/actions)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://codecov.io)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/snipher-marube/alx-project-nexus/releases)
+---
+## Video Demo
 
-**A production-ready, enterprise-grade e-commerce backend API built with Django REST Framework**
+[![Ecommerce](ecommerce.jpg)](https://youtu.be/ryWBLfCvIAE)
+---
 
-[🚀 Quick Start](#getting-started) • [📚 Documentation](#api-documentation) • [🧪 Testing](#testing) • [🤝 Contributing](#contributing) • [📞 Support](#support)
+## 📌 Quick summary
+The project is a simple yet complete e-commerce platform with the following functionality:
+
+> 1. **Product Browsing** --> Users can view available items on the platform.
+> 2. **Shopping Cart** --> Registered users can add items to their cart.
+> 3. **Order Management** --> Registered users can place and manage their orders.
+> 4. **Secure Payments** --> Users can pay using bank cards or mobile money services.
+
+On the **Admin side**, administrators have full **CRUD operations**, enabling them to manage products, orders, users, and payments, as well as customize the platform to meet specific business needs.
 
 ---
 
-## 📋 Table of Contents
+## 📋 Table of contents
 
-* [📚 Program Summary](#program-summary)
-* [🛠️ What I Learned](#what-i-learned)
-* [💡 Project Overview](#project-overview)
+* [Microservices layout](#-microservices-layout)
+* [Architecture overview (detailed)](#-architecture-overview-detailed)
 
-  * [🎯 Goals](#goals)
-  * [✨ Key Features](#key-features)
-  * [🔍 API Details](#api-details)
-  * [⚙️ Technology Stack](#technology-stack)
-* [🚀 Getting Started](#getting-started)
-
-  * [📦 Prerequisites](#prerequisites)
-  * [⚡ Quick Start](#quick-start)
-  * [🐳 Docker Setup](#docker-setup)
-* [📚 API Documentation](#api-documentation)
-* [🧪 Testing](#testing)
-* [🚀 Deployment](#deployment)
-* [🧠 Challenges & Solutions](#challenges--solutions)
-* [📌 Best Practices](#best-practices)
-* [🤝 Contributing](#contributing)
-* [📄 License](#license)
-* [📞 Support](#support)
+  * [High-level component diagram](#high-level-component-diagram)
+  * [Checkout & payment sequence](#checkout--payment-sequence)
+  * [Order / Payment state machine](#order--payment-state-machine)
+  * [Data ownership & boundaries](#data-ownership--boundaries)
+  * [Synchronous vs asynchronous flows](#synchronous-vs-asynchronous-flows)
+  * [Deployment patterns & suggestions](#deployment-patterns--suggestions)
+  * [Security & Operational considerations](#security--operational-considerations)
+  * [Observability & monitoring](#observability--monitoring)
+  * [Env var checklist & CI/CD notes](#env-var-checklist--cicd-notes)
+* [Links to app READMEs](#links-to-app-readmes)
 
 ---
 
-## 📚 Program Summary
+## 🔀 Microservices layout
 
-The **ProDev Backend Engineering Program** is an intensive journey into modern backend development. It focuses on scalable API development, DevOps, containerization, and real-world software engineering best practices.
+This repo is a single Django project arranged as modular apps (microservices-style):
 
-## 🛠️ What I Learned
+* `users/` — auth, registration, JWT, email verification, rate limiting
+* `products/` — categories, products, images, admin-only writes
+* `cart/` — user carts & items, cart business rules
+* `orders/` — convert cart → order, order lifecycle, tax & shipping
+* `payments/` — payment initiation, verification, webhooks, providers
 
-Here’s a snapshot of the skills and tools I mastered:
+Each app owns its models, serializers, and viewsets. Cross-app interactions happen through DB ownership, Django signals, and Celery tasks (asynchronously).
+---
 
-* **Database Design**: ER diagrams, normalization, schema planning
-* **Advanced SQL**: joins, indexes, views, query optimization
-* **Python**: context managers, generators, decorators, async
-* **Testing**: unit/integration testing with `pytest`
-* **Django & DRF**: models, views, serializers, seeders, JWT auth
-* **Middleware**: custom & built-in logic
-* **Signals/ORM**: listeners for events, advanced querying
-* **Git Workflow**: branching, commits, versioning
-* **Docker**: app containerization
-* **Kubernetes**: container orchestration
-* **GraphQL**: flexible querying
-* **CI/CD**: Jenkins, GitHub Actions for automated deployment
-* **Payment Integration**: Chapa API
-* **Celery + RabbitMQ**: background jobs
-* **Redis**: caching
-* **Deployment**: live hosting and API documentation
+## 🏗️ Architecture overview (detailed)
 
-## 💡 Project Overview
+### High-level component diagram
 
-An e-commerce backend RESTful API built with DRF and PostgreSQL, designed with scalability, security, and real-world backend principles in mind.
+```mermaid
+flowchart LR
+  subgraph client_side[Client]
+    A[Browser / Mobile App]
+  end
 
-### 🎯 Goals
+  subgraph edge[Edge]
+    NGINX[NGINX / ALB]
+  end
 
-* CRUD APIs for products, categories, and users
-* Filtering, sorting, and pagination
-* Secure authentication via JWT
-* Optimized DB structure with indexing
-* Swagger docs for frontend handoff
+  subgraph web[Web Tier]
+    G[Gunicorn / Uvicorn]
+    DJ[ecommerce Django app]
+  end
 
-### ✨ Key Features
+  subgraph apps[App Modules]
+    U[Users App]
+    P[Products App]
+    C[Cart App]
+    O[Orders App]
+    M[Payments App]
+  end
 
-* 🔐 JWT Auth
-* 🧾 CRUD: Products & Categories
-* 📊 Filtering & Sorting
-* 📄 Pagination
-* 📘 Auto-generated Swagger docs
+  subgraph infra[Infrastructure]
+    PG[(Postgres DB)]
+    REDIS[(Redis — cache & broker)]
+    CELERY[Celery Workers]
+    S3[(S3 / Object Storage)]
+    SMTP[SMTP / Transactional Email]
+    PP[Payment Providers]
+    CDN[CDN — Static & Media]
+    SENTRY[Sentry / Error Tracking]
+    PROM[Prometheus]
+  end
 
-### 🔍 API Details
-
-| Endpoint              | Method           | Auth     | Description            |
-| --------------------- | ---------------- | -------- | ---------------------- |
-| `/api/products/`      | GET, POST        | ✅ (POST) | List/create products   |
-| `/api/products/<id>/` | GET, PUT, DELETE | ✅        | Retrieve/update/delete |
-| `/api/categories/`    | GET, POST        | ✅ (POST) | Manage categories      |
-| `/api/auth/login/`    | POST             | ❌        | JWT login              |
-
-[📘 Full API docs here](https://your-swagger-link.com)
-
-### ⚙️ Technology Stack
-
-* Django + DRF
-* PostgreSQL
-* Docker
-* Redis + Celery + RabbitMQ
-* GitHub Actions
-* Swagger / Postman
-
-## 🚀 Getting Started
-
-### 📦 Prerequisites
-
-* Python 3.9+
-* PostgreSQL
-* Docker & Docker Compose
-* Git
-
-### ⚡ Quick Start
-
-```bash
-git clone https://github.com/snipher-marube/alx-project-nexus.git
-cd alx-project-nexus
-cp .env.example .env
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+  A -->|HTTPS| NGINX --> G --> DJ
+  DJ --> U & P & C & O & M
+  DJ --> PG
+  DJ --> REDIS
+  DJ --> S3
+  DJ --> SMTP
+  M --> PP
+  CELERY --> PG
+  CELERY --> SMTP
+  DJ -->|metrics| PROM
+  DJ -->|errors| SENTRY
+  S3 --> CDN
 ```
 
-### 🐳 Docker Setup
+*Notes:*
 
-```bash
-docker-compose up --build
+* All app URLs are routed by the Django project `urls.py`; apps expose DRF viewsets under their API namespaces (`/api/...`).
+* Static/media served via CDN/S3 in prod; locally via `MEDIA_ROOT`.
+
+---
+
+### Checkout & payment sequence (detailed)
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant B as Browser
+    participant API as Django API
+    participant PG as Postgres
+    participant Cel as Celery
+    participant Provider as Payment Provider
+
+    U->>B: Click "Checkout"
+    B->>API: POST /orders/create-order/ (auth)
+    API->>PG: Validate cart & create Order (atomic)
+    API-->>B: 200 OK {order_id, order_total}
+    B->>API: POST /payments/initiate/<order_id>/ {provider}
+    API->>M: Payments app validates order & creates Payment record (pending)
+    API->>Provider: Create transaction (redirect/checkout url)
+    Provider-->>B: Provides checkout URL (or inline widget)
+    B->>Provider: User pays
+    Provider-->>API: Webhook POST /payments/verify/<provider>/ (signed)
+    API->>M: Verify webhook signature & amount
+    alt verification ok
+      API->>PG: mark Payment.success, update Order.payment_status (atomic)
+      API->>Cel: queue order fulfillment tasks
+      Cel->>SMTP: send receipt email
+      API-->>Provider: 200 OK
+    else failed
+      API->>PG: mark Payment.failed, Order.payment_status=failed
+      API-->>Provider: 200 OK
+    end
+    API-->>B: User sees updated order status via polling or websocket
 ```
 
-## 📚 API Documentation
+**Idempotency & Safety:** Webhook handling must be idempotent (use `tx_ref` + DB unique constraint) and verify signatures.
 
-Auto-generated with Swagger using drf-yasg.
+---
 
-* Access at: `http://localhost:8000/swagger/`
-* [Live Swagger docs](https://your-swagger-link.com)
+### Order / Payment state machine
 
-## 🧪 Testing
-
-```bash
-pytest
+```mermaid
+stateDiagram-v2
+    [*] --> pending: order created
+    pending --> processing: payment initiated
+    processing --> success: payment verified
+    processing --> failed: payment failed or timeout
+    success --> shipped: fulfillment done
+    shipped --> delivered
+    pending --> cancelled: user cancel (rules)
+    processing --> cancelled: only if provider allows
 ```
 
-Includes:
+**Notes:**
 
-* Unit tests for models
-* Integration tests for endpoints
-* Token auth and edge case handling
+> * Cancellation rules: only `pending` or `processing` may be cancelled depending on payment/provider and order warehouse state.
+> * Use `transaction.atomic()` for transitions that touch Order + Payment.
 
-## 🚀 Deployment
+---
 
-Using GitHub Actions + Docker:
+### Data ownership & boundaries
 
-* Push to `main` → Triggers test, build & deploy
-* Dockerized for portability
+| App        | Models (examples)            | Primary responsibility                          |
+| ---------- | ---------------------------- | ----------------------------------------------- |
+| `users`    | `User (UUID)`, `UserProfile` | Auth, registration, tokens, roles               |
+| `products` | `Category`, `Product`        | Catalog, pricing, images, slugs                 |
+| `cart`     | `Cart`, `CartItem`           | In-memory shopping session persisted to DB      |
+| `orders`   | `Order`, `OrderItem`         | Order lifecycle, taxes, shipping                |
+| `payments` | `Payment`, `PaymentAttempt`  | Provider integration, webhooks, reconciliations |
 
-## 🧠 Challenges & Solutions
+*Principle:* each app owns its DB tables and logic. Cross-app reads are allowed, writes should be done by owning app or via well-defined APIs/tasks.
 
-| Challenge                   | Solution                                        |
-| --------------------------- | ----------------------------------------------- |
-| Docker + PostgreSQL configs | Used `.env` + volume mapping                    |
-| Token refresh edge cases    | Added `RefreshToken` logic with longer lifespan |
-| Async background task       | Offloaded to Celery worker w/ Redis broker      |
+---
 
-## 📌 Best Practices
+### Synchronous vs asynchronous flows
 
-* Followed REST standards
-* Modular views and reusable serializers
-* Used DRF permissions & throttling
-* `.env` for sensitive config
-* Swagger + postman docs for FE
+**Synchronous**
 
-## 🤝 Contributing
+* Product listing, cart CRUD, auth endpoints (fast API responses)
+* Order creation: validate cart synchronously and persist order record
 
-Pull requests are welcome! Please fork the repo and open a PR with a clear title and description.
+**Asynchronous**
 
-## 📄 License
+* Email sending (Celery)
+* Payment reconciliation and retries
+* Order fulfillment (warehouse integration)
+* Heavy reconciliation or report generation
 
-[MIT License](LICENSE)
+Use Celery with Redis as broker. Keep worker tasks idempotent and short.
 
-## 📞 Support
+---
 
-Need help? Reach out via                                                                                                                                                                                                             email: [muhumukip@gmail.com](mailto:muhumukip@gmail.com)
+## 🚢 Deployment patterns & suggestions
+
+Two recommended approaches:
+
+### 1) Docker Compose — local / staging (simple)
+
+* Services: `web` (gunicorn), `worker` (celery), `postgres`, `redis`, `minio` (local S3), `smtp` (mailhog)
+* Volumes for media in dev, use S3 in production
+* `supervisord` used in Dockerfile to run multiple processes if needed (web + celery cron), but prefer separate containers per process in prod
+
+### 2) Kubernetes — production (recommended for scale)
+
+* Deployments: `web` (replicas 2+), `worker` (autoscale), `cronworker`
+* StatefulSet or managed RDS for Postgres with read replicas
+* Managed Redis (AWS Elasticache / GCP Memorystore)
+* Use HorizontalPodAutoscaler, liveness/readiness probes
+* Ingress (NGINX / managed LB), TLS via cert-manager
+* Secrets stored in K8s Secret or cloud secret manager
+
+**Storage & Media**
+
+* Use S3/Cloud object storage + CDN for static & media
+* Avoid storing media on the web pod filesystem in prod
+
+**Scaling tips**
+
+* Cache product lists & category endpoints (use Redis) with short TTLs and cache invalidation on updates
+* Move long-running tasks to celery workers
+* Read replicas for heavy read load
+
+
+## ⚠️ Failure modes & mitigations (practical)
+
+* **Duplicate webhooks / retries**: enforce idempotency via `tx_ref` unique index + upsert semantics
+* **Provider downtime**: queue payment attempts, fallback to manual reconciliation; fail fast UX message
+* **Partial failures (order created but payment failed)**: mark `order.payment_status=failed`; enable retry flow
+* **Large DB writes during peak**: throttle writes (rate limit checkout), use queueing
+
+---
+
+## 🔁 CI/CD & local developer ergonomics
+
+* Pre-commit: `black`, `isort`, `flake8`, `mypy` (configured in `.pre-commit-config.yaml`)
+* GitHub Actions / GitLab CI: tests on PR, lint, mypy, build docker image
+* DB migrations in CI: run `python manage.py migrate --check` or use `django-test-migrations` for safe migrations
+* Use ephemeral review apps for PR previews
+
+---
+
+## 🧾 Env var checklist
+
+Minimum envs to set (in `.env` or secret manager):
+
+```
+SECRET_KEY=
+DATABASE_URL=postgres://user:pass@host:5432/dbname
+REDIS_URL=redis://host:6379/0
+CELERY_BROKER_URL=${REDIS_URL}
+ALLOWED_HOSTS=example.com
+DEBUG=False
+EMAIL_HOST=mail.example.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+DEFAULT_FROM_EMAIL=hello@example.com
+AWS_S3_BUCKET_NAME=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+PAYMENTS_CHAPA_KEY=
+PAYMENTS_PAYSTACK_KEY=
+PAYMENTS_MPESA_KEY=
+```
+
+---
+
+## 🔗 Links to app READMEs (detailed docs live there)
+
+* [Users](users/README.md) — Auth, registration, tokens, tests
+* [Products](products/README.md) — Catalog, slugs, admin-only writes
+* [Cart](cart/README.md) — Cart endpoints, item rules
+* [Orders](orders/README.md) — Checkout, taxes, cancellations
+* [Payments](payments/README.md) — Providers, webhooks, reconciliation
+
+---
